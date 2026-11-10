@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptUploadResponse;
+import org.mju.mjupitchrehearsal.attempt.dto.TranscriptResponse;
 import org.mju.mjupitchrehearsal.attempt.service.AttemptService;
 import org.mju.mjupitchrehearsal.global.response.BaseResponse;
 import org.springframework.http.HttpStatus;
@@ -38,5 +39,11 @@ public class AttemptController {
     @GetMapping("/api/v1/attempts/{attemptId}/status")
     public BaseResponse<AttemptStatusResponse> getStatus(@PathVariable Long attemptId) {
         return BaseResponse.of(HttpStatus.OK, "처리 상태 조회 성공", attemptService.getStatus(attemptId));
+    }
+
+    @Operation(summary = "⑦ 전사 조회", description = "구간 단위 전사와 타임스탬프. 전사가 끝나기 전에는 409")
+    @GetMapping("/api/v1/attempts/{attemptId}/transcript")
+    public BaseResponse<TranscriptResponse> getTranscript(@PathVariable Long attemptId) {
+        return BaseResponse.of(HttpStatus.OK, "전사 조회 성공", attemptService.getTranscript(attemptId));
     }
 }
