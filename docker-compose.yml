@@ -1,0 +1,27 @@
+# 로컬 개발용 MySQL. 실행: docker compose up -d / 종료: docker compose down
+# 데이터는 mysql-data 볼륨에 남습니다. 완전히 지우려면: docker compose down -v
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: pitch-mysql
+    ports:
+      - "${LOCAL_DB_PORT:-3306}:3306"
+    environment:
+      MYSQL_DATABASE: pitch
+      MYSQL_USER: ${LOCAL_DB_USERNAME:-pitch}
+      MYSQL_PASSWORD: ${LOCAL_DB_PASSWORD:-pitch}
+      MYSQL_ROOT_PASSWORD: ${LOCAL_DB_ROOT_PASSWORD:-root}
+      TZ: Asia/Seoul
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  mysql-data:

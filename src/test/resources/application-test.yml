@@ -1,0 +1,10 @@
+# 테스트 전용: Docker 없이 돌도록 H2 인메모리 DB(MySQL 모드) 사용
+spring:
+  datasource:
+    url: jdbc:h2:mem:pitch;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

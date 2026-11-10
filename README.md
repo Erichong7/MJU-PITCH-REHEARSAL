@@ -6,11 +6,14 @@
 
 ```bash
 cp .env.example .env   # 값 채우기
-./gradlew bootRun      # 기본 프로필: local (H2 인메모리 DB)
+docker compose up -d   # 로컬 MySQL 실행 (Docker Desktop 필요)
+./gradlew bootRun      # 기본 프로필: local (Docker MySQL)
 ```
 
 - Swagger: http://localhost:8080/swagger-ui.html
-- H2 콘솔: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:pitch`)
+- DB 접속 (IntelliJ Database 등): `localhost:3306` / DB `pitch` / 계정 `pitch` / 비밀번호 `pitch`
+- DB 끄기: `docker compose down` (데이터 유지), 데이터까지 지우기: `docker compose down -v`
+- 테스트(`./gradlew test`)는 Docker 없이 H2로 돕니다.
 
 ## 개발용 설정
 
@@ -27,7 +30,7 @@ cp .env.example .env   # 값 채우기
 
 ## 기술 결정
 
-- **DB:** 로컬은 H2(MySQL 모드), 배포는 AWS RDS MySQL (`prod` 프로필, `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`)
+- **DB:** 로컬은 Docker MySQL 8.4, 배포는 AWS RDS MySQL (`prod` 프로필, `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`)
 - **AI:** OpenAI GPT (피드백·비교), 키는 `OPENAI_API_KEY` 하나로 사용. 구현 전까지는 `LLM_PROVIDER=fake`
 
 ## 패키지 구조 / 담당
