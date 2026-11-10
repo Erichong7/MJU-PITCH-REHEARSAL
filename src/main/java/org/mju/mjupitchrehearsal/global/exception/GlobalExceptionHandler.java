@@ -2,7 +2,8 @@ package org.mju.mjupitchrehearsal.global.exception;
 
 import org.mju.mjupitchrehearsal.global.response.BaseResponse;
 import jakarta.validation.ConstraintViolationException;
-import java.util.stream.Collectors;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -20,6 +21,11 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<BaseResponse<Map<String, String>>> handleFieldValidation(ValidationException e) {
+        return toResponse(ErrorCode.INVALID_INPUT, e.getErrors());
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<BaseResponse<Void>> handleBusiness(BusinessException e) {
         log.warn("BusinessException: {} - {}", e.getErrorCode(), e.getMessage());
@@ -27,11 +33,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<BaseResponse<Void>> handleValidation(MethodArgumentNotValidException e) {
-        String message = e.getBindingResult().getFieldErrors().stream()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
-                .collect(Collectors.joining(", "));
-        return toResponse(ErrorCode.INVALID_INPUT, message);
+    public ResponseEntity<BaseResponse<Map<String, String>>> handleValidation(MethodArgumentNotValidException e) {
+        Map<String, String> errors = new LinkedHashMap<>();
+        e.getBindingResult().getFieldErrors()
+                .forEach(error -> errors.putIfAbsent(error.getField(), error.getDefaultMessage()));
+        return toResponse(ErrorCode.INVALID_INPUT, errors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -68,6 +74,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<BaseResponse<Void>> handleException(Exception e) {
         log.error("Unhandled exception", e);
         return toResponse(ErrorCode.INTERNAL_SERVER_ERROR, ErrorCode.INTERNAL_SERVER_ERROR.getMessage());
+    }
+
+    private ResponseEntity<BaseResponse<Map<String, String>>> toResponse(ErrorCode errorCode, Map<String, String> errors) {
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(BaseResponse.fail(errorCode, errorCode.getMessage(), errors));
     }
 
     private ResponseEntity<BaseResponse<Void>> toResponse(ErrorCode errorCode, String message) {
