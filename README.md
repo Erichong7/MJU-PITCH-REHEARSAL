@@ -12,6 +12,11 @@ cp .env.example .env   # 값 채우기
 - Swagger: http://localhost:8080/swagger-ui.html
 - H2 콘솔: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:pitch`)
 
+## 기술 결정
+
+- **DB:** 로컬은 H2(MySQL 모드), 배포는 AWS RDS MySQL (`prod` 프로필, `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`)
+- **AI:** OpenAI GPT (피드백·비교), 키는 `OPENAI_API_KEY` 하나로 사용. 구현 전까지는 `LLM_PROVIDER=fake`
+
 ## 패키지 구조 / 담당
 
 | 패키지 | 담당 | 내용 |
