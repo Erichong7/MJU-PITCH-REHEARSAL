@@ -27,6 +27,8 @@ springdoc:
 openai:
   api-key: ${OPENAI_API_KEY:}
 llm:
+  # fake: 가짜 AI (항상 같은 답), 진짜 AI 구현 후 해당 값으로 변경
+  provider: ${LLM_PROVIDER:fake}
   api-key: ${LLM_API_KEY:}
 aws:
   region: ${AWS_REGION:ap-northeast-2}
