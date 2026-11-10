@@ -29,4 +29,9 @@ public record BaseResponse<T>(boolean success, String code, String message, T da
     public static BaseResponse<Void> fail(ErrorCode errorCode, String message) {
         return new BaseResponse<>(false, String.valueOf(errorCode.getStatus().value()), message, null);
     }
+
+    /** 검증 실패처럼 실패 응답에도 data가 필요할 때 사용합니다. */
+    public static <T> BaseResponse<T> fail(ErrorCode errorCode, String message, T data) {
+        return new BaseResponse<>(false, String.valueOf(errorCode.getStatus().value()), message, data);
+    }
 }
