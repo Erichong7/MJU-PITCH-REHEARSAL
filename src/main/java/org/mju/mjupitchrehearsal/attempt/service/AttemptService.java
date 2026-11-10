@@ -1,13 +1,11 @@
 package org.mju.mjupitchrehearsal.attempt.service;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
@@ -24,7 +22,7 @@ import org.mju.mjupitchrehearsal.attempt.event.AttemptUploadedEvent;
 import org.mju.mjupitchrehearsal.attempt.event.TranscriptEditedEvent;
 import org.mju.mjupitchrehearsal.attempt.repository.AttemptRepository;
 import org.mju.mjupitchrehearsal.attempt.repository.TranscriptSegmentRepository;
-import org.mju.mjupitchrehearsal.attempt.support.M4aDurationReader;
+import org.mju.mjupitchrehearsal.attempt.support.AudioFiles;
 import org.mju.mjupitchrehearsal.global.exception.BusinessException;
 import org.mju.mjupitchrehearsal.global.exception.ErrorCode;
 import org.mju.mjupitchrehearsal.global.exception.ValidationException;
@@ -62,9 +60,9 @@ public class AttemptService {
             throw new BusinessException(ErrorCode.PRACTICE_FORBIDDEN);
         }
 
-        byte[] content = readAudio(audio);
-        long durationMs = M4aDurationReader.readDurationMs(content)
-                .orElseThrow(() -> new BusinessException(ErrorCode.UNSUPPORTED_AUDIO));
+        AudioFiles.M4a m4a = AudioFiles.readM4a(audio);
+        byte[] content = m4a.content();
+        long durationMs = m4a.durationMs();
         validateLength(practice.getMode(), durationMs);
 
         String audioKey = "attempts/%d/%s.m4a".formatted(practiceId, UUID.randomUUID());
@@ -160,21 +158,6 @@ public class AttemptService {
             case FAILED -> attempt.getFailedStep() != FailedStep.TRANSCRIBE;
             default -> true;
         };
-    }
-
-    private byte[] readAudio(MultipartFile audio) {
-        if (audio == null || audio.isEmpty()) {
-            throw new BusinessException(ErrorCode.AUDIO_REQUIRED);
-        }
-        String name = audio.getOriginalFilename();
-        if (name == null || !name.toLowerCase(Locale.ROOT).endsWith(".m4a")) {
-            throw new BusinessException(ErrorCode.UNSUPPORTED_AUDIO);
-        }
-        try {
-            return audio.getBytes();
-        } catch (IOException e) {
-            throw new BusinessException(ErrorCode.INVALID_FILE);
-        }
     }
 
     private void validateLength(Mode mode, long durationMs) {

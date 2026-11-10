@@ -40,6 +40,10 @@ public class Retry extends BaseTimeEntity {
     @JoinColumn(name = "feedback_id", nullable = false)
     private Feedback feedback;
 
+    /** 같은 피드백에서 몇 번째 재연습인지 (1부터) */
+    @Column(nullable = false)
+    private Integer retryNo;
+
     @Column(nullable = false)
     private String audioKey;
 
@@ -62,8 +66,9 @@ public class Retry extends BaseTimeEntity {
     private List<ComparisonItem> comparisons = new ArrayList<>();
 
     @Builder
-    private Retry(Feedback feedback, String audioKey, Long durationMs) {
+    private Retry(Feedback feedback, Integer retryNo, String audioKey, Long durationMs) {
         this.feedback = feedback;
+        this.retryNo = retryNo;
         this.audioKey = audioKey;
         this.durationMs = durationMs;
         this.status = AttemptStatus.UPLOADED;

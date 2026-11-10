@@ -41,6 +41,11 @@ public enum ErrorCode {
     FEEDBACK_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 피드백입니다."),
     FEEDBACK_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 피드백만 다시 연습할 수 있습니다."),
 
+    // Retry
+    RETRY_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 재연습입니다."),
+    RETRY_FORBIDDEN(HttpStatus.FORBIDDEN, "본인의 재연습만 조회할 수 있습니다."),
+    RETRY_LOCKED(HttpStatus.CONFLICT, "녹음을 다시 분석하는 중에는 재연습할 수 없습니다."),
+
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");
 
