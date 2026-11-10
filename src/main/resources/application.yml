@@ -24,12 +24,12 @@ springdoc:
     path: /v3/api-docs
 
 # 외부 연동 설정 (값은 .env 또는 서버 환경변수로 주입)
+# AI(피드백·비교)와 STT 모두 OpenAI(GPT)를 사용하므로 키는 하나로 통일
 openai:
   api-key: ${OPENAI_API_KEY:}
 llm:
-  # fake: 가짜 AI (항상 같은 답), 진짜 AI 구현 후 해당 값으로 변경
+  # fake: 가짜 AI, openai: GPT 연결 (진짜 AI 구현 후 사용)
   provider: ${LLM_PROVIDER:fake}
-  api-key: ${LLM_API_KEY:}
 aws:
   region: ${AWS_REGION:ap-northeast-2}
   s3:
