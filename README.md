@@ -12,6 +12,19 @@ cp .env.example .env   # 값 채우기
 - Swagger: http://localhost:8080/swagger-ui.html
 - H2 콘솔: http://localhost:8080/h2-console (JDBC URL `jdbc:h2:mem:pitch`)
 
+## 개발용 설정
+
+| 설정 (.env) | 기본값 | 설명 |
+| --- | --- | --- |
+| `LLM_PROVIDER` | `fake` | 가짜 AI. 진짜 GPT 구현(5단계) 후 교체 |
+| `STT_PROVIDER` | `fake` | 가짜 STT. Whisper 구현(4단계) 후 교체 |
+| `STORAGE_TYPE` | `local` | 녹음을 `./uploads`에 저장. S3 준비 후 교체 |
+| `FAKE_DELAY_MS` | `2000` | 가짜 STT·AI가 기다리는 시간 (⑤ 상태 변화 확인용) |
+
+- **프롬프트 연습용 주소 (local 전용):** Swagger의 "개발용" 그룹 → `POST /api/v1/dev/llm/feedback`
+  - 전사 글을 넣으면 GPT 답을 그대로 보여 줌. `.env`에 `OPENAI_API_KEY` 필요
+  - 프롬프트 파일: `src/main/resources/prompts/feedback-system.txt` (요청의 `systemPrompt`로 바로 바꿔 시험 가능)
+
 ## 기술 결정
 
 - **DB:** 로컬은 H2(MySQL 모드), 배포는 AWS RDS MySQL (`prod` 프로필, `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`)

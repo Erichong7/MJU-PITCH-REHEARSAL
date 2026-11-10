@@ -33,6 +33,9 @@ springdoc:
 # AI(피드백·비교)와 STT 모두 OpenAI(GPT)를 사용하므로 키는 하나로 통일
 openai:
   api-key: ${OPENAI_API_KEY:}
+  # 모델은 팀에서 정하면 바꾸기 (5단계 전까지)
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  timeout-sec: 60
 llm:
   # fake: 가짜 AI, openai: GPT 연결 (진짜 AI 구현 후 사용)
   provider: ${LLM_PROVIDER:fake}
