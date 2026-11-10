@@ -48,9 +48,10 @@ public class AnalysisPipeline {
             return;
         }
 
-        // 2. AI 피드백
+        // 2. 지표 계산 + AI 피드백
         try {
             steps.changeStatus(attemptId, AttemptStatus.ANALYZING);
+            steps.calculateMetrics(attemptId);
             FeedbackResult result = llmClient.requestFeedback(steps.buildFeedbackRequest(attemptId));
             // TODO(5단계): 인용 검증(quote가 해당 구간에 있는지) 후 Feedback 저장, 최대 3개
             log.info("[Analysis] feedback received attemptId={} issues={}", attemptId, result.issues().size());

@@ -32,6 +32,7 @@ public enum ErrorCode {
     AUDIO_REQUIRED(HttpStatus.BAD_REQUEST, "녹음 파일이 없습니다."),
     UNSUPPORTED_AUDIO(HttpStatus.BAD_REQUEST, "m4a(AAC) 녹음 파일만 업로드할 수 있습니다."),
     AUDIO_TOO_LONG(HttpStatus.BAD_REQUEST, "녹음이 너무 깁니다."),
+    TRANSCRIPT_NOT_READY(HttpStatus.CONFLICT, "아직 전사가 끝나지 않았습니다."),
 
     // User
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.");

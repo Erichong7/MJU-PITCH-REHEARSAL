@@ -40,8 +40,11 @@ llm:
   # fake: 가짜 AI, openai: GPT 연결 (진짜 AI 구현 후 사용)
   provider: ${LLM_PROVIDER:fake}
 stt:
-  # fake: 가짜 STT (항상 같은 전사), 4단계에서 whisper 구현 추가
+  # fake: 가짜 STT (항상 같은 전사), whisper: OpenAI Whisper (OPENAI_API_KEY 필요)
   provider: ${STT_PROVIDER:fake}
+  whisper:
+    model: whisper-1
+    timeout-sec: 120
 fake:
   # 가짜 STT·AI가 기다리는 시간(ms). ⑤ 상태 조회에서 단계 변화를 보기 위함
   delay-ms: ${FAKE_DELAY_MS:2000}

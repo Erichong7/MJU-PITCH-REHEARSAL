@@ -1,14 +1,18 @@
 package org.mju.mjupitchrehearsal.attempt.service;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptUploadResponse;
+import org.mju.mjupitchrehearsal.attempt.dto.TranscriptResponse;
 import org.mju.mjupitchrehearsal.attempt.entity.Attempt;
+import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
 import org.mju.mjupitchrehearsal.attempt.event.AttemptUploadedEvent;
 import org.mju.mjupitchrehearsal.attempt.repository.AttemptRepository;
+import org.mju.mjupitchrehearsal.attempt.repository.TranscriptSegmentRepository;
 import org.mju.mjupitchrehearsal.attempt.support.M4aDurationReader;
 import org.mju.mjupitchrehearsal.global.exception.BusinessException;
 import org.mju.mjupitchrehearsal.global.exception.ErrorCode;
@@ -31,6 +35,7 @@ public class AttemptService {
 
     private final PracticeRepository practiceRepository;
     private final AttemptRepository attemptRepository;
+    private final TranscriptSegmentRepository segmentRepository;
     private final AudioStorage audioStorage;
     private final CurrentUserProvider currentUserProvider;
     private final ApplicationEventPublisher eventPublisher;
@@ -67,12 +72,40 @@ public class AttemptService {
     /** ⑤ 처리 상태 조회 */
     @Transactional(readOnly = true)
     public AttemptStatusResponse getStatus(Long attemptId) {
+        return AttemptStatusResponse.from(getOwnedAttempt(attemptId));
+    }
+
+    /** ⑦ 전사 조회. 전사가 끝나기 전(업로드됨·전사 중·전사 실패)에는 409 */
+    @Transactional(readOnly = true)
+    public TranscriptResponse getTranscript(Long attemptId) {
+        Attempt attempt = getOwnedAttempt(attemptId);
+        if (!hasTranscript(attempt)) {
+            throw new BusinessException(ErrorCode.TRANSCRIPT_NOT_READY);
+        }
+        List<TranscriptResponse.SegmentDto> segments = segmentRepository.findAllByAttemptIdOrderBySeqAsc(attemptId)
+                .stream()
+                .map(TranscriptResponse.SegmentDto::from)
+                .toList();
+        return new TranscriptResponse(attemptId, segments);
+    }
+
+    /** 본인 녹음인지 확인하고 돌려줍니다. 다른 서비스(피드백 등)에서도 사용합니다. */
+    @Transactional(readOnly = true)
+    public Attempt getOwnedAttempt(Long attemptId) {
         Attempt attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ATTEMPT_NOT_FOUND));
         if (!attempt.getPractice().getUser().getId().equals(currentUserProvider.getCurrentUserId())) {
             throw new BusinessException(ErrorCode.ATTEMPT_FORBIDDEN);
         }
-        return AttemptStatusResponse.from(attempt);
+        return attempt;
+    }
+
+    private boolean hasTranscript(Attempt attempt) {
+        return switch (attempt.getStatus()) {
+            case UPLOADED, TRANSCRIBING -> false;
+            case FAILED -> attempt.getFailedStep() != FailedStep.TRANSCRIBE;
+            default -> true;
+        };
     }
 
     private byte[] readAudio(MultipartFile audio) {

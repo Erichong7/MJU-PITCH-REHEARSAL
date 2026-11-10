@@ -3,11 +3,14 @@ package org.mju.mjupitchrehearsal.attempt.service;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.entity.Attempt;
+import org.mju.mjupitchrehearsal.attempt.entity.AttemptMetric;
 import org.mju.mjupitchrehearsal.attempt.entity.AttemptStatus;
 import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
 import org.mju.mjupitchrehearsal.attempt.entity.TranscriptSegment;
+import org.mju.mjupitchrehearsal.attempt.repository.AttemptMetricRepository;
 import org.mju.mjupitchrehearsal.attempt.repository.AttemptRepository;
 import org.mju.mjupitchrehearsal.attempt.repository.TranscriptSegmentRepository;
+import org.mju.mjupitchrehearsal.attempt.support.SpeechMetricsCalculator;
 import org.mju.mjupitchrehearsal.global.exception.BusinessException;
 import org.mju.mjupitchrehearsal.global.exception.ErrorCode;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackRequest;
@@ -26,6 +29,7 @@ public class AnalysisStepService {
 
     private final AttemptRepository attemptRepository;
     private final TranscriptSegmentRepository segmentRepository;
+    private final AttemptMetricRepository metricRepository;
 
     @Transactional
     public void changeStatus(Long attemptId, AttemptStatus status) {
@@ -63,9 +67,23 @@ public class AnalysisStepService {
         }
     }
 
-    /**
-     * AI에 보낼 주문서. 말 속도·멈춤 지표는 4단계에서 계산해 채웁니다.
-     */
+    /** 전사로 말 속도·빨라진 구간·긴 멈춤을 계산해 저장합니다. 전사를 고친 뒤 다시 부르면 덮어씁니다. */
+    @Transactional
+    public void calculateMetrics(Long attemptId) {
+        Attempt attempt = getAttempt(attemptId);
+        List<TranscriptSegment> segments = segmentRepository.findAllByAttemptIdOrderBySeqAsc(attemptId);
+        SpeechMetricsCalculator.Result result = SpeechMetricsCalculator.calculate(segments);
+        long durationMs = attempt.getDurationMs() != null
+                ? attempt.getDurationMs()
+                : segments.isEmpty() ? 0L : segments.get(segments.size() - 1).getEndMs();
+
+        metricRepository.findByAttemptId(attemptId).ifPresentOrElse(
+                metric -> metric.update(durationMs, result.syllablesPerSec(), result.fastSegments(), result.longPauses()),
+                () -> metricRepository.save(new AttemptMetric(attempt, durationMs, result.syllablesPerSec(),
+                        result.fastSegments(), result.longPauses())));
+    }
+
+    /** AI에 보낼 주문서: 발표 조건·전문 용어, 지표, 구간별 전사 */
     @Transactional(readOnly = true)
     public FeedbackRequest buildFeedbackRequest(Long attemptId) {
         Attempt attempt = getAttempt(attemptId);
@@ -78,9 +96,17 @@ public class AnalysisStepService {
                 List.copyOf(practice.getKeyPoints()),
                 List.copyOf(practice.getTermWords()));
 
-        // TODO(4단계): 말 속도, 빨라진 구간, 1초 이상 멈춤 계산
-        FeedbackRequest.Metrics metrics = new FeedbackRequest.Metrics(
-                attempt.getDurationMs(), null, List.of(), List.of());
+        FeedbackRequest.Metrics metrics = metricRepository.findByAttemptId(attemptId)
+                .map(m -> new FeedbackRequest.Metrics(
+                        m.getDurationMs(),
+                        m.getSyllablesPerSec(),
+                        m.getFastSegments().stream()
+                                .map(f -> new FeedbackRequest.FastSegment(f.getSegmentKey(), f.getSyllablesPerSec()))
+                                .toList(),
+                        m.getLongPauses().stream()
+                                .map(p -> new FeedbackRequest.LongPause(p.getSegmentKey(), p.getPauseMs()))
+                                .toList()))
+                .orElse(new FeedbackRequest.Metrics(attempt.getDurationMs(), null, List.of(), List.of()));
 
         List<FeedbackRequest.Segment> segments = segmentRepository.findAllByAttemptIdOrderBySeqAsc(attemptId)
                 .stream()
