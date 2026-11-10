@@ -8,6 +8,8 @@ import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackResult;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
+import org.mju.mjupitchrehearsal.global.util.FakeDelay;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
@@ -25,9 +27,17 @@ public class FakeLlmClient implements LlmClient {
     private static final List<FeedbackType> TYPES = List.of(
             FeedbackType.NO_EVIDENCE, FeedbackType.MISSING_EXPLANATION, FeedbackType.STRUCTURE);
 
+    /** 실제처럼 시간이 걸리게 해서 ⑤ 상태 조회에서 ANALYZING을 볼 수 있게 합니다. */
+    private final long delayMs;
+
+    public FakeLlmClient(@Value("${fake.delay-ms:2000}") long delayMs) {
+        this.delayMs = delayMs;
+    }
+
     @Override
     public FeedbackResult requestFeedback(FeedbackRequest request) {
         log.info("[FakeLlm] requestFeedback segments={}", request.segments().size());
+        FakeDelay.sleep(delayMs);
         List<FeedbackRequest.Segment> segments = request.segments();
         if (segments.isEmpty()) {
             return new FeedbackResult(List.of(), null);
@@ -56,6 +66,7 @@ public class FakeLlmClient implements LlmClient {
     @Override
     public ComparisonResult requestComparison(ComparisonRequest request) {
         log.info("[FakeLlm] requestComparison type={}", request.feedback().type());
+        FakeDelay.sleep(delayMs);
         String criterion = request.feedback().type() == null
                 ? "전달력"
                 : request.feedback().type().getDescription();

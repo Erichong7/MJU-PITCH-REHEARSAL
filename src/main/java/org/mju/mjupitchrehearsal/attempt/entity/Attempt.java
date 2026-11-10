@@ -33,7 +33,11 @@ public class Attempt extends BaseTimeEntity {
     @JoinColumn(name = "practice_id", nullable = false)
     private Practice practice;
 
-    /** S3 객체 키 */
+    /** 이 연습에서 몇 번째 녹음인지 (1부터) */
+    @Column(nullable = false)
+    private Integer attemptNo;
+
+    /** 저장소(S3 / 로컬) 객체 키 */
     @Column(nullable = false)
     private String audioKey;
 
@@ -48,8 +52,9 @@ public class Attempt extends BaseTimeEntity {
     private FailedStep failedStep;
 
     @Builder
-    private Attempt(Practice practice, String audioKey, Long durationMs) {
+    private Attempt(Practice practice, Integer attemptNo, String audioKey, Long durationMs) {
         this.practice = practice;
+        this.attemptNo = attemptNo;
         this.audioKey = audioKey;
         this.durationMs = durationMs;
         this.status = AttemptStatus.UPLOADED;

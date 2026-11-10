@@ -8,13 +8,19 @@ spring:
     import: optional:file:.env[.properties]
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
+      # Whisper 제한에 맞춰 녹음 파일은 최대 25MB (초과 시 413)
+      max-file-size: 25MB
+      max-request-size: 26MB
   jpa:
     open-in-view: false
     properties:
       hibernate:
         format_sql: true
+
+server:
+  tomcat:
+    # 25MB를 넘는 요청도 끝까지 받아서 413 응답을 돌려주기 위함
+    max-swallow-size: 100MB
 
 springdoc:
   swagger-ui:
@@ -30,6 +36,17 @@ openai:
 llm:
   # fake: 가짜 AI, openai: GPT 연결 (진짜 AI 구현 후 사용)
   provider: ${LLM_PROVIDER:fake}
+stt:
+  # fake: 가짜 STT (항상 같은 전사), 4단계에서 whisper 구현 추가
+  provider: ${STT_PROVIDER:fake}
+fake:
+  # 가짜 STT·AI가 기다리는 시간(ms). ⑤ 상태 조회에서 단계 변화를 보기 위함
+  delay-ms: ${FAKE_DELAY_MS:2000}
+storage:
+  # local: 내 컴퓨터 디스크(./uploads), S3 준비 후 s3로 교체
+  type: ${STORAGE_TYPE:local}
+  local:
+    dir: ${STORAGE_LOCAL_DIR:./uploads}
 aws:
   region: ${AWS_REGION:ap-northeast-2}
   s3:
