@@ -1,5 +1,7 @@
 package org.mju.mjupitchrehearsal.infra.storage;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import org.springframework.core.io.Resource;
 
 /**
@@ -15,4 +17,12 @@ public interface AudioStorage {
     void save(String key, byte[] content);
 
     Resource load(String key);
+
+    /**
+     * 앱이 바로 재생할 수 있는 임시 링크. S3에서는 presigned URL, 로컬에서는 서명된 서버 주소입니다.
+     */
+    PlaybackUrl createPlaybackUrl(String key, Duration ttl);
+
+    record PlaybackUrl(String url, LocalDateTime expiresAt) {
+    }
 }

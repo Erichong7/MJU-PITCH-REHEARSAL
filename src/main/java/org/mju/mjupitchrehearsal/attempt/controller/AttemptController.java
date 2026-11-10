@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptUploadResponse;
+import org.mju.mjupitchrehearsal.attempt.dto.AudioUrlResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.TranscriptResponse;
 import org.mju.mjupitchrehearsal.attempt.service.AttemptService;
 import org.mju.mjupitchrehearsal.global.response.BaseResponse;
@@ -45,5 +46,11 @@ public class AttemptController {
     @GetMapping("/api/v1/attempts/{attemptId}/transcript")
     public BaseResponse<TranscriptResponse> getTranscript(@PathVariable Long attemptId) {
         return BaseResponse.of(HttpStatus.OK, "전사 조회 성공", attemptService.getTranscript(attemptId));
+    }
+
+    @Operation(summary = "⑩ 녹음 재생 URL 조회", description = "10분 유효. 앱은 피드백의 startMs로 이동(seek) 후 재생합니다.")
+    @GetMapping("/api/v1/attempts/{attemptId}/audio")
+    public BaseResponse<AudioUrlResponse> getAudioUrl(@PathVariable Long attemptId) {
+        return BaseResponse.of(HttpStatus.OK, "녹음 재생 URL 조회 성공", attemptService.getAudioUrl(attemptId));
     }
 }
