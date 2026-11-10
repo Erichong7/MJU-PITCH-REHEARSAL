@@ -42,5 +42,6 @@ out/
 !.env.example
 
 ### Etc ###
+uploads/
 .DS_Store
 .omc/
