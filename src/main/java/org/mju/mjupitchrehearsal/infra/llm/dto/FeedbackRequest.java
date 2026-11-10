@@ -23,8 +23,11 @@ public record FeedbackRequest(
      * @param audience     청중 (nullable)
      * @param timeLimitSec 제한 시간(초)
      * @param keyPoints    꼭 전달할 내용 (없으면 빈 리스트)
+     * @param terms        전문 용어 (Practice.getTermWords(), 없으면 빈 리스트).
+     *                     청중 수준에 비해 설명 없이 쓴 용어를 짚는 데 사용
      */
-    public record Condition(String purpose, String audience, Integer timeLimitSec, List<String> keyPoints) {
+    public record Condition(String purpose, String audience, Integer timeLimitSec,
+                            List<String> keyPoints, List<String> terms) {
     }
 
     /**
