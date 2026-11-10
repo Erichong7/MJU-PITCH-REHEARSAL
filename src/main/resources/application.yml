@@ -53,6 +53,10 @@ storage:
   type: ${STORAGE_TYPE:local}
   local:
     dir: ${STORAGE_LOCAL_DIR:./uploads}
+    # ⑩ 재생 링크 앞부분 (앱 에뮬레이터에서는 http://10.0.2.2:8080 등으로 바꾸기)
+    public-base-url: ${STORAGE_LOCAL_BASE_URL:http://localhost:8080}
+    # 재생 링크 서명 키. 비우면 서버를 켤 때마다 새로 만듦
+    signing-secret: ${STORAGE_LOCAL_SIGNING_SECRET:}
 aws:
   region: ${AWS_REGION:ap-northeast-2}
   s3:

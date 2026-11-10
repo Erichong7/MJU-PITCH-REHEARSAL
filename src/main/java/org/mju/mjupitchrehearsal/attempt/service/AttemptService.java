@@ -1,11 +1,13 @@
 package org.mju.mjupitchrehearsal.attempt.service;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
+import org.mju.mjupitchrehearsal.attempt.dto.AudioUrlResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptUploadResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.TranscriptResponse;
 import org.mju.mjupitchrehearsal.attempt.entity.Attempt;
@@ -32,6 +34,7 @@ public class AttemptService {
 
     private static final long PRESENTATION_MAX_MS = 5 * 60 * 1000L;
     private static final long INTERVIEW_MAX_MS = 2 * 60 * 1000L;
+    private static final Duration PLAYBACK_TTL = Duration.ofMinutes(10);
 
     private final PracticeRepository practiceRepository;
     private final AttemptRepository attemptRepository;
@@ -87,6 +90,14 @@ public class AttemptService {
                 .map(TranscriptResponse.SegmentDto::from)
                 .toList();
         return new TranscriptResponse(attemptId, segments);
+    }
+
+    /** ⑩ 녹음 재생 링크 (10분 유효). 앱은 피드백의 startMs로 이동해서 재생합니다. */
+    @Transactional(readOnly = true)
+    public AudioUrlResponse getAudioUrl(Long attemptId) {
+        Attempt attempt = getOwnedAttempt(attemptId);
+        AudioStorage.PlaybackUrl url = audioStorage.createPlaybackUrl(attempt.getAudioKey(), PLAYBACK_TTL);
+        return new AudioUrlResponse(url.url(), url.expiresAt(), attempt.getDurationMs());
     }
 
     /** 본인 녹음인지 확인하고 돌려줍니다. 다른 서비스(피드백 등)에서도 사용합니다. */

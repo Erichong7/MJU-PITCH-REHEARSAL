@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.mju.mjupitchrehearsal.attempt.entity.AttemptStatus;
 import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
 import org.mju.mjupitchrehearsal.attempt.event.AttemptUploadedEvent;
+import org.mju.mjupitchrehearsal.feedback.service.FeedbackSaveService;
 import org.mju.mjupitchrehearsal.infra.llm.LlmClient;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackResult;
 import org.mju.mjupitchrehearsal.infra.stt.SttClient;
@@ -26,6 +27,7 @@ public class AnalysisPipeline {
     private final AnalysisStepService steps;
     private final SttClient sttClient;
     private final LlmClient llmClient;
+    private final FeedbackSaveService feedbackSaveService;
 
     @Async("analysisExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -53,8 +55,9 @@ public class AnalysisPipeline {
             steps.changeStatus(attemptId, AttemptStatus.ANALYZING);
             steps.calculateMetrics(attemptId);
             FeedbackResult result = llmClient.requestFeedback(steps.buildFeedbackRequest(attemptId));
-            // TODO(5단계): 인용 검증(quote가 해당 구간에 있는지) 후 Feedback 저장, 최대 3개
-            log.info("[Analysis] feedback received attemptId={} issues={}", attemptId, result.issues().size());
+            log.info("[Analysis] feedback received attemptId={} issues={}", attemptId,
+                    result.issues() == null ? 0 : result.issues().size());
+            feedbackSaveService.replaceFeedbacks(attemptId, result);
         } catch (Exception e) {
             log.error("[Analysis] analyze failed attemptId={}", attemptId, e);
             steps.fail(attemptId, FailedStep.ANALYZE);
