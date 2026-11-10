@@ -33,6 +33,7 @@ public enum ErrorCode {
     UNSUPPORTED_AUDIO(HttpStatus.BAD_REQUEST, "m4a(AAC) 녹음 파일만 업로드할 수 있습니다."),
     AUDIO_TOO_LONG(HttpStatus.BAD_REQUEST, "녹음이 너무 깁니다."),
     TRANSCRIPT_NOT_READY(HttpStatus.CONFLICT, "아직 전사가 끝나지 않았습니다."),
+    TRANSCRIPT_LOCKED(HttpStatus.CONFLICT, "분석 중에는 전사를 수정할 수 없습니다."),
     AUDIO_URL_INVALID(HttpStatus.FORBIDDEN, "재생 링크가 만료되었거나 올바르지 않습니다."),
 
     // Feedback

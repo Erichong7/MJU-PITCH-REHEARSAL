@@ -2,10 +2,13 @@ package org.mju.mjupitchrehearsal.attempt.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptUploadResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AudioUrlResponse;
+import org.mju.mjupitchrehearsal.attempt.dto.TranscriptEditRequest;
+import org.mju.mjupitchrehearsal.attempt.dto.TranscriptEditResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.TranscriptResponse;
 import org.mju.mjupitchrehearsal.attempt.service.AttemptService;
 import org.mju.mjupitchrehearsal.global.response.BaseResponse;
@@ -13,8 +16,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -52,5 +57,13 @@ public class AttemptController {
     @GetMapping("/api/v1/attempts/{attemptId}/audio")
     public BaseResponse<AudioUrlResponse> getAudioUrl(@PathVariable Long attemptId) {
         return BaseResponse.of(HttpStatus.OK, "녹음 재생 URL 조회 성공", attemptService.getAudioUrl(attemptId));
+    }
+
+    @Operation(summary = "⑧ 전사 수정 (재분석)",
+            description = "글만 고칠 수 있고 시간은 못 고칩니다. STT 없이 지표·피드백만 다시 만들며 status는 ANALYZING이 됩니다(⑤로 폴링). 분석 중이면 409")
+    @PatchMapping("/api/v1/attempts/{attemptId}/transcript")
+    public BaseResponse<TranscriptEditResponse> editTranscript(@PathVariable Long attemptId,
+                                                               @Valid @RequestBody TranscriptEditRequest request) {
+        return BaseResponse.of(HttpStatus.OK, "전사 수정 성공", attemptService.editTranscript(attemptId, request));
     }
 }

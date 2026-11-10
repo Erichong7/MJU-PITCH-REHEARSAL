@@ -2,22 +2,32 @@ package org.mju.mjupitchrehearsal.attempt.service;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptStatusResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AudioUrlResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.AttemptUploadResponse;
+import org.mju.mjupitchrehearsal.attempt.dto.TranscriptEditRequest;
+import org.mju.mjupitchrehearsal.attempt.dto.TranscriptEditResponse;
 import org.mju.mjupitchrehearsal.attempt.dto.TranscriptResponse;
 import org.mju.mjupitchrehearsal.attempt.entity.Attempt;
+import org.mju.mjupitchrehearsal.attempt.entity.AttemptStatus;
 import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
+import org.mju.mjupitchrehearsal.attempt.entity.TranscriptSegment;
 import org.mju.mjupitchrehearsal.attempt.event.AttemptUploadedEvent;
+import org.mju.mjupitchrehearsal.attempt.event.TranscriptEditedEvent;
 import org.mju.mjupitchrehearsal.attempt.repository.AttemptRepository;
 import org.mju.mjupitchrehearsal.attempt.repository.TranscriptSegmentRepository;
 import org.mju.mjupitchrehearsal.attempt.support.M4aDurationReader;
 import org.mju.mjupitchrehearsal.global.exception.BusinessException;
 import org.mju.mjupitchrehearsal.global.exception.ErrorCode;
+import org.mju.mjupitchrehearsal.global.exception.ValidationException;
 import org.mju.mjupitchrehearsal.infra.storage.AudioStorage;
 import org.mju.mjupitchrehearsal.practice.entity.Mode;
 import org.mju.mjupitchrehearsal.practice.entity.Practice;
@@ -90,6 +100,39 @@ public class AttemptService {
                 .map(TranscriptResponse.SegmentDto::from)
                 .toList();
         return new TranscriptResponse(attemptId, segments);
+    }
+
+    /**
+     * ⑧ 전사 수정. 글만 바꾸고(시간은 그대로) 커밋 뒤 STT 없이 지표·피드백만 다시 만듭니다.
+     */
+    @Transactional
+    public TranscriptEditResponse editTranscript(Long attemptId, TranscriptEditRequest request) {
+        Attempt attempt = getOwnedAttempt(attemptId);
+        if (attempt.getStatus().isInProgress()) {
+            throw new BusinessException(ErrorCode.TRANSCRIPT_LOCKED);
+        }
+        if (!hasTranscript(attempt)) {
+            throw new BusinessException(ErrorCode.TRANSCRIPT_NOT_READY);
+        }
+
+        Map<String, TranscriptSegment> segments = segmentRepository.findAllByAttemptIdOrderBySeqAsc(attemptId)
+                .stream()
+                .collect(Collectors.toMap(TranscriptSegment::getSegmentKey, Function.identity()));
+
+        Map<String, String> errors = new LinkedHashMap<>();
+        for (int i = 0; i < request.segments().size(); i++) {
+            if (!segments.containsKey(request.segments().get(i).segmentId())) {
+                errors.put("segments[%d].segmentId".formatted(i), "해당 녹음에 없는 구간입니다.");
+            }
+        }
+        if (!errors.isEmpty()) {
+            throw new ValidationException(errors);
+        }
+
+        request.segments().forEach(edit -> segments.get(edit.segmentId()).editText(edit.text().strip()));
+        attempt.changeStatus(AttemptStatus.ANALYZING);
+        eventPublisher.publishEvent(new TranscriptEditedEvent(attemptId));
+        return new TranscriptEditResponse(attemptId, attempt.getStatus());
     }
 
     /** ⑩ 녹음 재생 링크 (10분 유효). 앱은 피드백의 startMs로 이동해서 재생합니다. */
