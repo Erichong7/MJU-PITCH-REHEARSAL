@@ -72,7 +72,7 @@ public class FeedbackSaveService {
             if (segment == null || issue.type() == null || !StringUtils.hasText(issue.reason())
                     || !StringUtils.hasText(issue.suggestion())
                     || !QuoteMatcher.contains(segment.getText(), issue.quote())
-                    || !seen.add(issue.segmentId() + "|" + issue.type())) {
+                    || !seen.add(issue.segmentId() + "|" + QuoteMatcher.normalize(issue.quote()))) {
                 dropped++;
                 log.warn("[Feedback] dropped issue attemptId={} segmentId={} quote={}",
                         attemptId, issue.segmentId(), issue.quote());
