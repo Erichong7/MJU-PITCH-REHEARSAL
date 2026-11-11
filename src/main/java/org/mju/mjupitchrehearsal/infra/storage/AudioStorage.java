@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.core.io.Resource;
 
 /**
- * 녹음 파일 저장소. 지금은 로컬 디스크({@link LocalAudioStorage}), S3 준비 후 S3 구현으로 교체합니다.
+ * 녹음 파일 저장소. 로컬 디스크({@link LocalAudioStorage}) 또는 S3({@link S3AudioStorage}).
  * 교체는 설정값 {@code storage.type}으로 합니다.
  */
 public interface AudioStorage {
