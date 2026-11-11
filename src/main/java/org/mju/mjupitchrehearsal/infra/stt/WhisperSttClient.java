@@ -71,6 +71,7 @@ public class WhisperSttClient implements SttClient {
         form.add("language", "ko");
         form.add("response_format", "verbose_json");
         form.add("timestamp_granularities[]", "segment");
+        form.add("timestamp_granularities[]", "word");
         String prompt = buildPrompt(terms);
         if (StringUtils.hasText(prompt)) {
             form.add("prompt", prompt);
@@ -108,8 +109,21 @@ public class WhisperSttClient implements SttClient {
         return joined.length() > MAX_PROMPT_CHARS ? joined.substring(0, MAX_PROMPT_CHARS) : joined;
     }
 
+    /** 문장 단위로 나눌 수 있으면 문장 구간을, 아니면 Whisper segment를 그대로 씁니다. */
     private SttResult parse(String response) {
         JsonNode root = jsonMapper.readTree(response);
+        List<SentenceSegmenter.Word> words = new ArrayList<>();
+        for (JsonNode node : root.path("words")) {
+            words.add(new SentenceSegmenter.Word(node.path("word").asString(),
+                    Math.round(node.path("start").asDouble() * 1000),
+                    Math.round(node.path("end").asDouble() * 1000)));
+        }
+        List<SttResult.Segment> sentences = SentenceSegmenter.split(root.path("text").asString(), words);
+        if (sentences != null) {
+            return new SttResult(sentences);
+        }
+        log.warn("[Whisper] 문장 단위로 나누지 못해 Whisper segment를 그대로 사용 words={}", words.size());
+
         List<SttResult.Segment> segments = new ArrayList<>();
         for (JsonNode node : root.path("segments")) {
             String text = node.path("text").asString().strip();
