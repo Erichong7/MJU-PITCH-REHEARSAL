@@ -1,6 +1,7 @@
 package org.mju.mjupitchrehearsal.retry.service;
 
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.mju.mjupitchrehearsal.attempt.entity.AttemptStatus;
 import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
@@ -21,6 +22,8 @@ import org.springframework.util.StringUtils;
 @Service
 @RequiredArgsConstructor
 public class RetryStepService {
+
+    private static final int MAX_ITEMS = 3;
 
     private final RetryRepository retryRepository;
 
@@ -59,19 +62,28 @@ public class RetryStepService {
                 retry.getTranscript());
     }
 
-    /** afterQuote가 재녹음 전사에 없으면 비웁니다 (항목 자체는 남김). */
+    /**
+     * afterQuote가 재녹음 전사에 없으면 비웁니다 (항목 자체는 남김).
+     * 근거 인용이 없으면 "나아짐"을 인정하지 않고 resolved=false로 저장합니다.
+     */
     @Transactional
     public void complete(Long retryId, ComparisonResult result) {
         Retry retry = getRetry(retryId);
         List<ComparisonResult.Item> items = result.items() == null ? List.of() : result.items();
         List<ComparisonItem> comparisons = items.stream()
+                .filter(Objects::nonNull)
                 .filter(i -> StringUtils.hasText(i.criterion()))
-                .map(i -> new ComparisonItem(
-                        i.criterion(),
-                        nullToEmpty(i.before()),
-                        nullToEmpty(i.after()),
-                        i.resolved(),
-                        QuoteMatcher.contains(retry.getTranscript(), i.afterQuote()) ? i.afterQuote().strip() : null))
+                .limit(MAX_ITEMS)
+                .map(i -> {
+                    String afterQuote = QuoteMatcher.contains(retry.getTranscript(), i.afterQuote())
+                            ? i.afterQuote().strip() : null;
+                    return new ComparisonItem(
+                            i.criterion(),
+                            nullToEmpty(i.before()),
+                            nullToEmpty(i.after()),
+                            i.resolved() && afterQuote != null,
+                            afterQuote);
+                })
                 .toList();
         retry.complete(comparisons);
     }

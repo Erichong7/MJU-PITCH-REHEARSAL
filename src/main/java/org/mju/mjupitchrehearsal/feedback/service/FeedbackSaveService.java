@@ -64,8 +64,13 @@ public class FeedbackSaveService {
             if (rank >= MAX_ISSUES) {
                 break;
             }
+            if (issue == null) {
+                dropped++;
+                continue;
+            }
             TranscriptSegment segment = segments.get(issue.segmentId());
             if (segment == null || issue.type() == null || !StringUtils.hasText(issue.reason())
+                    || !StringUtils.hasText(issue.suggestion())
                     || !QuoteMatcher.contains(segment.getText(), issue.quote())
                     || !seen.add(issue.segmentId() + "|" + issue.type())) {
                 dropped++;
