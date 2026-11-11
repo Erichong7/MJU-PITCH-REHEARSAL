@@ -49,7 +49,7 @@ fake:
   # 가짜 STT·AI가 기다리는 시간(ms). ⑤ 상태 조회에서 단계 변화를 보기 위함
   delay-ms: ${FAKE_DELAY_MS:2000}
 storage:
-  # local: 내 컴퓨터 디스크(./uploads), S3 준비 후 s3로 교체
+  # local: 내 컴퓨터 디스크(./uploads), s3: AWS S3 (AWS_S3_BUCKET 필요)
   type: ${STORAGE_TYPE:local}
   local:
     dir: ${STORAGE_LOCAL_DIR:./uploads}
@@ -61,3 +61,7 @@ aws:
   region: ${AWS_REGION:ap-northeast-2}
   s3:
     bucket: ${AWS_S3_BUCKET:}
+  # 로컬은 .env의 액세스 키 사용. EC2는 비워 두면 IAM 역할로 접근
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID:}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:}
