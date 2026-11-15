@@ -8,6 +8,7 @@ import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
 import org.mju.mjupitchrehearsal.infra.llm.LlmClient;
 import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonResult;
 import org.mju.mjupitchrehearsal.infra.stt.SttClient;
+import org.mju.mjupitchrehearsal.infra.stt.SttTermCorrector;
 import org.mju.mjupitchrehearsal.infra.stt.dto.SttResult;
 import org.mju.mjupitchrehearsal.retry.event.RetryUploadedEvent;
 import org.springframework.scheduling.annotation.Async;
@@ -25,6 +26,7 @@ public class RetryPipeline {
 
     private final RetryStepService steps;
     private final SttClient sttClient;
+    private final SttTermCorrector termCorrector;
     private final LlmClient llmClient;
 
     @Async("analysisExecutor")
@@ -37,7 +39,8 @@ public class RetryPipeline {
         try {
             steps.changeStatus(retryId, AttemptStatus.TRANSCRIBING);
             RetryStepService.SttInput input = steps.getSttInput(retryId);
-            SttResult stt = sttClient.transcribe(input.audioKey(), input.terms());
+            SttResult stt = termCorrector.correct(
+                    sttClient.transcribe(input.audioKey(), input.terms()), input.terms());
             String transcript = stt.segments().stream()
                     .map(SttResult.Segment::text)
                     .collect(Collectors.joining(" "));

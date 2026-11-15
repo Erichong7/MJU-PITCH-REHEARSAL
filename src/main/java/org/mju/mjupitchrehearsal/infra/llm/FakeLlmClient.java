@@ -5,6 +5,8 @@ import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonRequest;
 import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonResult;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackRequest;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackResult;
+import org.mju.mjupitchrehearsal.infra.llm.dto.TermCorrectionRequest;
+import org.mju.mjupitchrehearsal.infra.llm.dto.TermCorrectionResult;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +63,13 @@ public class FakeLlmClient implements LlmClient {
                 first.segmentId(), first.text(), "[가짜 AI] 도입이 명확합니다.");
 
         return new FeedbackResult(issues, strength);
+    }
+
+    /** 가짜 AI는 전사를 고치지 않습니다. */
+    @Override
+    public TermCorrectionResult requestTermCorrection(TermCorrectionRequest request) {
+        log.info("[FakeLlm] requestTermCorrection terms={}", request.terms());
+        return new TermCorrectionResult(List.of());
     }
 
     @Override
