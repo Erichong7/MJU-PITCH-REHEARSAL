@@ -1,6 +1,7 @@
 package org.mju.mjupitchrehearsal.attempt.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +12,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -57,8 +60,14 @@ public class TranscriptSegment {
     @Column(nullable = false)
     private boolean edited;
 
+    /** 이 구간(문장) 안에서 1초 이상 멈춘 곳. 시간 정보라 전사를 고쳐도 그대로입니다. */
+    @Convert(converter = InnerPauseListConverter.class)
+    @Column(name = "inner_pauses", length = 500)
+    private List<InnerPause> innerPauses = new ArrayList<>();
+
     @Builder
-    private TranscriptSegment(Attempt attempt, Integer seq, String segmentKey, Long startMs, Long endMs, String text) {
+    private TranscriptSegment(Attempt attempt, Integer seq, String segmentKey, Long startMs, Long endMs, String text,
+                              List<InnerPause> innerPauses) {
         this.attempt = attempt;
         this.seq = seq;
         this.segmentKey = segmentKey;
@@ -66,6 +75,11 @@ public class TranscriptSegment {
         this.endMs = endMs;
         this.text = text;
         this.edited = false;
+        this.innerPauses = innerPauses == null ? new ArrayList<>() : new ArrayList<>(innerPauses);
+    }
+
+    public List<InnerPause> getInnerPauses() {
+        return innerPauses == null ? List.of() : innerPauses;
     }
 
     /** 글만 고칠 수 있고 시간은 고칠 수 없습니다. */
