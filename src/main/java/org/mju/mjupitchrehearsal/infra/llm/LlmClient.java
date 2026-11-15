@@ -4,6 +4,8 @@ import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonRequest;
 import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonResult;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackRequest;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackResult;
+import org.mju.mjupitchrehearsal.infra.llm.dto.TermCorrectionRequest;
+import org.mju.mjupitchrehearsal.infra.llm.dto.TermCorrectionResult;
 
 /**
  * 홍정우(분석 파이프라인)와 이수영(AI 연결·프롬프트)이 만나는 유일한 지점.
@@ -24,4 +26,10 @@ public interface LlmClient {
 
     /** 비교 받기: 1차 발언·2차 발언·원래 피드백 → 항목별로 나아졌는지 */
     ComparisonResult requestComparison(ComparisonRequest request);
+
+    /**
+     * 용어 교정 받기: 전문 용어·구간별 전사 → STT가 잘못 적은 용어의 고칠 곳 목록.
+     * 검증·반영은 호출하는 쪽(SttTermCorrector)이 합니다. (#48에서 추가, 위 두 함수는 그대로)
+     */
+    TermCorrectionResult requestTermCorrection(TermCorrectionRequest request);
 }

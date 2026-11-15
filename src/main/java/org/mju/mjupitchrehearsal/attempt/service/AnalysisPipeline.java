@@ -10,6 +10,7 @@ import org.mju.mjupitchrehearsal.feedback.service.FeedbackSaveService;
 import org.mju.mjupitchrehearsal.infra.llm.LlmClient;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackResult;
 import org.mju.mjupitchrehearsal.infra.stt.SttClient;
+import org.mju.mjupitchrehearsal.infra.stt.SttTermCorrector;
 import org.mju.mjupitchrehearsal.infra.stt.dto.SttResult;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * 업로드 후 백그라운드에서 도는 분석 흐름.
- * UPLOADED → TRANSCRIBING(STT) → ANALYZING(지표 + AI) → COMPLETED, 실패하면 FAILED + 실패한 단계.
+ * UPLOADED → TRANSCRIBING(STT + 전문 용어 교정) → ANALYZING(지표 + AI) → COMPLETED, 실패하면 FAILED + 실패한 단계.
  * 전사를 고친 경우(⑧)에는 STT를 건너뛰고 ANALYZING부터 다시 실행합니다.
  * 단계별 걸린 시간을 로그로 남깁니다 (9단계 시간·비용 측정용).
  */
@@ -29,6 +30,7 @@ public class AnalysisPipeline {
 
     private final AnalysisStepService steps;
     private final SttClient sttClient;
+    private final SttTermCorrector termCorrector;
     private final LlmClient llmClient;
     private final FeedbackSaveService feedbackSaveService;
 
@@ -58,7 +60,8 @@ public class AnalysisPipeline {
         try {
             steps.changeStatus(attemptId, AttemptStatus.TRANSCRIBING);
             AnalysisStepService.SttInput input = steps.getSttInput(attemptId);
-            SttResult result = sttClient.transcribe(input.audioKey(), input.terms());
+            SttResult result = termCorrector.correct(
+                    sttClient.transcribe(input.audioKey(), input.terms()), input.terms());
             steps.saveSegments(attemptId, result);
             log.info("[Analysis] transcribed attemptId={} segments={} elapsedMs={}",
                     attemptId, result.segments().size(), System.currentTimeMillis() - start);

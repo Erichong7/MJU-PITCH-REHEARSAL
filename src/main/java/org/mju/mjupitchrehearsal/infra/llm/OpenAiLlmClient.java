@@ -9,6 +9,8 @@ import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonRequest;
 import org.mju.mjupitchrehearsal.infra.llm.dto.ComparisonResult;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackRequest;
 import org.mju.mjupitchrehearsal.infra.llm.dto.FeedbackResult;
+import org.mju.mjupitchrehearsal.infra.llm.dto.TermCorrectionRequest;
+import org.mju.mjupitchrehearsal.infra.llm.dto.TermCorrectionResult;
 import org.mju.mjupitchrehearsal.infra.llm.openai.OpenAiChatClient;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
@@ -45,6 +47,11 @@ public class OpenAiLlmClient implements LlmClient {
     @Override
     public ComparisonResult requestComparison(ComparisonRequest request) {
         return callAi("prompts/comparison-system.txt", request, ComparisonResult.class);
+    }
+
+    @Override
+    public TermCorrectionResult requestTermCorrection(TermCorrectionRequest request) {
+        return callAi("prompts/term-correction-system.txt", request, TermCorrectionResult.class);
     }
 
     private <T> T callAi(String promptPath, Object request,
