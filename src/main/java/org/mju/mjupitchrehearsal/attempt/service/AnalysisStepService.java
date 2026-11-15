@@ -6,6 +6,7 @@ import org.mju.mjupitchrehearsal.attempt.entity.Attempt;
 import org.mju.mjupitchrehearsal.attempt.entity.AttemptMetric;
 import org.mju.mjupitchrehearsal.attempt.entity.AttemptStatus;
 import org.mju.mjupitchrehearsal.attempt.entity.FailedStep;
+import org.mju.mjupitchrehearsal.attempt.entity.InnerPause;
 import org.mju.mjupitchrehearsal.attempt.entity.TranscriptSegment;
 import org.mju.mjupitchrehearsal.attempt.repository.AttemptMetricRepository;
 import org.mju.mjupitchrehearsal.attempt.repository.AttemptRepository;
@@ -63,6 +64,9 @@ public class AnalysisStepService {
                     .startMs(s.startMs())
                     .endMs(s.endMs())
                     .text(s.text())
+                    .innerPauses(s.pauses().stream()
+                            .map(p -> new InnerPause(p.startMs(), p.pauseMs()))
+                            .toList())
                     .build());
         }
     }

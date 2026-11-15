@@ -44,6 +44,7 @@ final class SentenceSegmenter {
             }
         }
 
+        double msPerSyllable = InnerPauseDetector.msPerSyllable(words);
         List<SttResult.Segment> sentences = new ArrayList<>();
         int cursor = 0;
         Matcher m = SENTENCE.matcher(text);
@@ -56,13 +57,17 @@ final class SentenceSegmenter {
             if (cursor + len > charToWord.size()) {
                 return null;
             }
-            Word first = words.get(charToWord.get(cursor));
-            Word last = words.get(charToWord.get(cursor + len - 1));
+            int firstIdx = charToWord.get(cursor);
+            int lastIdx = charToWord.get(cursor + len - 1);
+            Word first = words.get(firstIdx);
+            Word last = words.get(lastIdx);
             long endMs = Math.max(first.startMs(), last.endMs());
             if (endMs - first.startMs() > MAX_SENTENCE_MS) {
                 return null;
             }
-            sentences.add(new SttResult.Segment(first.startMs(), endMs, sentence));
+            List<SttResult.Pause> pauses =
+                    InnerPauseDetector.detect(words.subList(firstIdx, lastIdx + 1), msPerSyllable);
+            sentences.add(new SttResult.Segment(first.startMs(), endMs, sentence, pauses));
             cursor += len;
         }
         return cursor == charToWord.size() && !sentences.isEmpty() ? sentences : null;

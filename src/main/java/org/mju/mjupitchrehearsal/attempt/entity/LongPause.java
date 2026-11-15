@@ -7,7 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/** 1초 이상 멈춤. segmentKey는 멈춤 직후 시작하는 구간입니다. */
+/** 1초 이상 멈춤. segmentKey는 멈춤 직후 시작하는 구간, 또는 문장 안 멈춤이면 그 멈춤이 들어 있는 구간입니다. */
 @Getter
 @Embeddable
 @AllArgsConstructor

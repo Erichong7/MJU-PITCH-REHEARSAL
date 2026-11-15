@@ -43,7 +43,7 @@ public record FeedbackRequest(
     public record FastSegment(String segmentId, Double syllablesPerSec) {
     }
 
-    /** segmentId: 멈춤 직후 시작하는 구간 */
+    /** segmentId: 멈춤 직후 시작하는 구간, 또는 문장 안 멈춤이면 그 멈춤이 들어 있는 구간 */
     public record LongPause(String segmentId, Long pauseMs) {
     }
 

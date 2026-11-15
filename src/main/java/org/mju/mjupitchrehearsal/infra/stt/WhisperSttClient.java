@@ -124,6 +124,7 @@ public class WhisperSttClient implements SttClient {
         }
         log.warn("[Whisper] 문장 단위로 나누지 못해 Whisper segment를 그대로 사용 words={}", words.size());
 
+        double msPerSyllable = InnerPauseDetector.msPerSyllable(words);
         List<SttResult.Segment> segments = new ArrayList<>();
         for (JsonNode node : root.path("segments")) {
             String text = node.path("text").asString().strip();
@@ -131,8 +132,12 @@ public class WhisperSttClient implements SttClient {
                 continue;
             }
             long startMs = Math.round(node.path("start").asDouble() * 1000);
-            long endMs = Math.round(node.path("end").asDouble() * 1000);
-            segments.add(new SttResult.Segment(startMs, Math.max(startMs, endMs), text));
+            long endMs = Math.max(startMs, Math.round(node.path("end").asDouble() * 1000));
+            List<SentenceSegmenter.Word> inside = words.stream()
+                    .filter(w -> w.startMs() >= startMs && w.endMs() <= endMs)
+                    .toList();
+            segments.add(new SttResult.Segment(startMs, endMs, text,
+                    InnerPauseDetector.detect(inside, msPerSyllable)));
         }
         return new SttResult(segments);
     }

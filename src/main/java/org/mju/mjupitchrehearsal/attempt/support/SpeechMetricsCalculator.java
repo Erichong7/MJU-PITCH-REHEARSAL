@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.mju.mjupitchrehearsal.attempt.entity.FastSegment;
+import org.mju.mjupitchrehearsal.attempt.entity.InnerPause;
 import org.mju.mjupitchrehearsal.attempt.entity.LongPause;
 import org.mju.mjupitchrehearsal.attempt.entity.TranscriptSegment;
 
@@ -12,9 +13,10 @@ import org.mju.mjupitchrehearsal.attempt.entity.TranscriptSegment;
  * 말한 방식 수치를 계산합니다. AI 없이 전사와 타임스탬프만 사용합니다.
  *
  * <ul>
- *   <li>말 속도: 음절 수 ÷ 말한 시간(구간 시간의 합, 멈춤 제외)</li>
+ *   <li>말 속도: 음절 수 ÷ 말한 시간(구간 시간의 합에서 구간 안 멈춤을 뺀 값)</li>
  *   <li>빨라진 구간: 구간 속도가 본인 평균의 {@value #FAST_RATIO}배 이상</li>
- *   <li>긴 멈춤: 앞 구간 끝 ~ 다음 구간 시작이 {@value #LONG_PAUSE_MS}ms 이상</li>
+ *   <li>긴 멈춤: 앞 구간 끝 ~ 다음 구간 시작이 {@value #LONG_PAUSE_MS}ms 이상인 곳과,
+ *       STT 때 단어 시간으로 찾아 둔 구간 안 멈춤({@link TranscriptSegment#getInnerPauses()})</li>
  * </ul>
  */
 public final class SpeechMetricsCalculator {
@@ -33,7 +35,7 @@ public final class SpeechMetricsCalculator {
         long speakingMs = 0;
         int totalSyllables = 0;
         for (TranscriptSegment s : segments) {
-            speakingMs += Math.max(0, s.getEndMs() - s.getStartMs());
+            speakingMs += speakingMs(s);
             totalSyllables += countSyllables(s.getText());
         }
         double average = speakingMs == 0 ? 0.0 : round(totalSyllables / (speakingMs / 1000.0));
@@ -42,7 +44,7 @@ public final class SpeechMetricsCalculator {
         List<LongPause> pauses = new ArrayList<>();
         TranscriptSegment prev = null;
         for (TranscriptSegment s : segments) {
-            long ms = s.getEndMs() - s.getStartMs();
+            long ms = speakingMs(s);
             if (average > 0 && ms >= MIN_FAST_SEGMENT_MS) {
                 double speed = round(countSyllables(s.getText()) / (ms / 1000.0));
                 if (speed >= average * FAST_RATIO) {
@@ -55,9 +57,20 @@ public final class SpeechMetricsCalculator {
                     pauses.add(new LongPause(s.getSegmentKey(), prev.getEndMs(), gap));
                 }
             }
+            for (InnerPause p : s.getInnerPauses()) {
+                if (p.pauseMs() >= LONG_PAUSE_MS) {
+                    pauses.add(new LongPause(s.getSegmentKey(), p.startMs(), p.pauseMs()));
+                }
+            }
             prev = s;
         }
         return new Result(average, fast, pauses);
+    }
+
+    /** 구간 시간에서 구간 안 멈춤을 뺀 실제로 말한 시간 */
+    private static long speakingMs(TranscriptSegment s) {
+        long paused = s.getInnerPauses().stream().mapToLong(InnerPause::pauseMs).sum();
+        return Math.max(0, s.getEndMs() - s.getStartMs() - paused);
     }
 
     /**
