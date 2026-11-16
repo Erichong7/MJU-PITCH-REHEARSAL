@@ -1,0 +1,49 @@
+# CI: PR마다 빌드가 되는지 확인
+# CD: main에 합쳐지면 EC2에서 최신 코드로 다시 빌드·실행
+# 필요한 저장소 Secrets: EC2_HOST(탄력적 IP), EC2_SSH_KEY(pitch-key.pem 내용 전체)
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: 빌드 확인
+        run: |
+          chmod +x gradlew
+          ./gradlew bootJar --no-daemon -x test
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    # 배포가 겹치지 않게 한 번에 하나씩
+    concurrency:
+      group: deploy-ec2
+      cancel-in-progress: false
+    steps:
+      - name: EC2에 배포
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 20m
+          script: |
+            set -e
+            cd ~/mju-pitch-rehearsal
+            git fetch origin main
+            git reset --hard origin/main
+            bash scripts/deploy.sh
